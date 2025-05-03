@@ -6,6 +6,10 @@ const {
   deleteUser,
   editUser,
 } = require("../controller/user/userController");
+const {
+  loginUser,
+  getLoginHistory,
+} = require("../controller/user/userLoginController");
 
 // User registration route
 router.post("/register", addUser);
@@ -18,5 +22,9 @@ router.delete("/user/:id", deleteUser);
 
 // Edit user route
 router.put("/user/:id", editUser);
+
+// Login routes
+router.post("/login", loginUser);
+router.get("/login-history", getLoginHistory);
 
 module.exports = router;
