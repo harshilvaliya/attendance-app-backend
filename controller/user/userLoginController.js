@@ -1,6 +1,7 @@
 const UserLogin = require("../../models/userLoginModel");
 const bcrypt = require("bcryptjs");
 const User = require("../../models/userModel");
+const jwt = require("jsonwebtoken");
 
 const loginUser = async (req, res) => {
   try {
@@ -28,42 +29,31 @@ const loginUser = async (req, res) => {
     user.LoginAt = new Date();
     await user.save();
 
-    res.status(200).json({
-      status: "success",
+    // Generate JWT token
+    const token = jwt.sign(
+      {
+        userId: user._id,
+        email: user.email,
+      },
+      process.env.JWT_SECRET || "eminem", // In production, use environment variable
+      { expiresIn: "24h" }
+    );
+
+    res.json({
+      status: 200,
       message: "Login successful",
       data: {
         email: user.email,
         lastLogin: user.LoginAt,
+        token: token,
       },
     });
   } catch (error) {
     console.log(error);
-    
-    res.status(500).json({
-      status: "error",
+
+    res.json({
+      status: 500,
       message: "Error during login",
-      error: error.message,
-    });
-  }
-};
-
-const getLoginHistory = async (req, res) => {
-  try {
-    const { email } = req.query;
-    const query = email ? { email } : {};
-
-    const loginHistory = await UserLogin.find(query)
-      .sort({ LoginAt: -1 })
-      .select("email LoginAt");
-
-    res.status(200).json({
-      status: "success",
-      data: loginHistory,
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: "error",
-      message: "Error fetching login history",
       error: error.message,
     });
   }
@@ -71,5 +61,4 @@ const getLoginHistory = async (req, res) => {
 
 module.exports = {
   loginUser,
-  getLoginHistory,
 };

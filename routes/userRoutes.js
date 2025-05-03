@@ -6,25 +6,16 @@ const {
   deleteUser,
   editUser,
 } = require("../controller/user/userController");
-const {
-  loginUser,
-  getLoginHistory,
-} = require("../controller/user/userLoginController");
+const { loginUser } = require("../controller/user/userLoginController");
+const authMiddleware = require("../middleware/authMiddleware");
 
-// User registration route
+// Public routes
 router.post("/register", addUser);
-
-// Get all users route
-router.get("/users", getAllUser);
-
-// Delete user route
-router.delete("/user/:id", deleteUser);
-
-// Edit user route
-router.put("/user/:id", editUser);
-
-// Login routes
 router.post("/login", loginUser);
-router.get("/login-history", getLoginHistory);
+
+// Protected routes
+router.get("/users", authMiddleware, getAllUser);
+router.delete("/user/:id", authMiddleware, deleteUser);
+router.put("/user/:id", authMiddleware, editUser);
 
 module.exports = router;
