@@ -42,7 +42,7 @@ const loginUser = async (req, res) => {
     res.json({
       status: 200,
       message: "Login successful",
-      data: {
+      details: {
         email: user.email,
         lastLogin: user.LoginAt,
         token: token,

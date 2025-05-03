@@ -15,7 +15,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use("/user", userRoutes);
-console.log(process.env.MONGODB_URI);
+app.use("/admin", userRoutes);
 
 // Database connection
 const PORT = process.env.PORT || 3000;

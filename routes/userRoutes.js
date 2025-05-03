@@ -1,12 +1,15 @@
 const express = require("express");
 const router = express.Router();
+
 const {
   addUser,
   getAllUser,
   deleteUser,
   editUser,
 } = require("../controller/user/userController");
+
 const { loginUser } = require("../controller/user/userLoginController");
+
 const {
   createLeaveForm,
   getUserLeaveForms,
@@ -15,6 +18,14 @@ const {
   getAllLeaveForms,
   deleteLeaveForm,
 } = require("../controller/user/leaveFormController");
+
+const {
+  addHoliday,
+  getAllHolidays,
+  deleteHoliday,
+  editHoliday,
+} = require("../controller/admin/adminHolidayController");
+
 const authMiddleware = require("../middleware/authMiddleware");
 const adminAuthMiddleware = require("../middleware/adminAuthMiddleware");
 
@@ -22,7 +33,7 @@ const adminAuthMiddleware = require("../middleware/adminAuthMiddleware");
 router.post("/register", addUser);
 router.post("/login", loginUser);
 
-// Protected routes
+// Protected user routes
 router.get("/users", authMiddleware, getAllUser);
 router.delete("/user/:id", authMiddleware, deleteUser);
 router.put("/user/:id", authMiddleware, editUser);
@@ -38,5 +49,11 @@ router.put(
 );
 router.get("/all-leave-forms", adminAuthMiddleware, getAllLeaveForms);
 router.delete("/leave-form/:id", adminAuthMiddleware, deleteLeaveForm);
+
+// Holiday Routes (Admin Only)
+router.post("/holiday", adminAuthMiddleware, addHoliday);
+router.get("/holidays", adminAuthMiddleware, getAllHolidays);
+router.delete("/holiday/:id", adminAuthMiddleware, deleteHoliday);
+router.put("/holiday/:id", adminAuthMiddleware, editHoliday);
 
 module.exports = router;
