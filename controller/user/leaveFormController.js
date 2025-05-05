@@ -1,96 +1,98 @@
+const { upload } = require("../../config/multur");
 const LeaveForm = require("../../models/leaveFormModel");
-const User = require("../../models/userModel");
 
-// Create a new leave form
-exports.createLeaveForm = async (req, res) => {
-  try {
-    const { leaveType, fromDate, toDate, reason, document } = req.body;
-    const userId = req.user._id;
+exports.createLeaveForm = [
+  upload.single("document"), // 'document' should match the field name in your form
+  async (req, res) => {
+    try {
+      const { leaveType, fromDate, toDate, reason } = req.body;
+      const userId = req.user._id;
 
-    // Validate required fields
-    if (!leaveType || !fromDate || !toDate || !reason) {
-      return res.status(400).json({
+      // Validate required fields
+      if (!leaveType || !fromDate || !toDate || !reason) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Please provide all required fields: leaveType, fromDate, toDate, and reason",
+        });
+      }
+
+      // Validate leave type
+      const validLeaveTypes = [
+        "Annual",
+        "Sick",
+        "Maternity",
+        "Paternity",
+        "Unpaid",
+        "Other",
+      ];
+      if (!validLeaveTypes.includes(leaveType)) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Invalid leave type. Must be one of: Annual, Sick, Maternity, Paternity, Unpaid, Other",
+        });
+      }
+
+      // Validate dates
+      const fromDateObj = new Date(fromDate);
+      const toDateObj = new Date(toDate);
+      const currentDate = new Date();
+
+      if (isNaN(fromDateObj.getTime()) || isNaN(toDateObj.getTime())) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid date format",
+        });
+      }
+
+      if (fromDateObj > toDateObj) {
+        return res.status(400).json({
+          success: false,
+          message: "From date cannot be after to date",
+        });
+      }
+
+      if (fromDateObj < currentDate) {
+        return res.status(400).json({
+          success: false,
+          message: "Leave cannot be applied for past dates",
+        });
+      }
+
+      // Validate reason length
+      if (reason.length < 10 || reason.length > 500) {
+        return res.status(400).json({
+          success: false,
+          message: "Reason must be between 10 and 500 characters",
+        });
+      }
+
+      const leaveForm = new LeaveForm({
+        user: userId,
+        leaveType,
+        fromDate: fromDateObj,
+        toDate: toDateObj,
+        reason,
+        document: req.file ? `/public/${req.file.filename}` : null, // Save the file path
+      });
+
+      await leaveForm.save();
+
+      res.status(201).json({
+        success: true,
+        message: "Leave form submitted successfully",
+        data: leaveForm,
+      });
+    } catch (error) {
+      res.status(500).json({
         success: false,
-        message:
-          "Please provide all required fields: leaveType, fromDate, toDate, and reason",
+        message: "Error creating leave form",
+        error: error.message,
       });
     }
-
-    // Validate leave type
-    const validLeaveTypes = [
-      "Annual",
-      "Sick",
-      "Maternity",
-      "Paternity",
-      "Unpaid",
-      "Other",
-    ];
-    if (!validLeaveTypes.includes(leaveType)) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Invalid leave type. Must be one of: Annual, Sick, Maternity, Paternity, Unpaid, Other",
-      });
-    }
-
-    // Validate dates
-    const fromDateObj = new Date(fromDate);
-    const toDateObj = new Date(toDate);
-    const currentDate = new Date();
-
-    if (isNaN(fromDateObj.getTime()) || isNaN(toDateObj.getTime())) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid date format",
-      });
-    }
-
-    if (fromDateObj > toDateObj) {
-      return res.status(400).json({
-        success: false,
-        message: "From date cannot be after to date",
-      });
-    }
-
-    if (fromDateObj < currentDate) {
-      return res.status(400).json({
-        success: false,
-        message: "Leave cannot be applied for past dates",
-      });
-    }
-
-    // Validate reason length
-    if (reason.length < 10 || reason.length > 500) {
-      return res.status(400).json({
-        success: false,
-        message: "Reason must be between 10 and 500 characters",
-      });
-    }
-
-    const leaveForm = new LeaveForm({
-      user: userId,
-      leaveType,
-      fromDate: fromDateObj,
-      toDate: toDateObj,
-      reason,
-      document,
-    });
-
-    await leaveForm.save();
-
-    res.status(201).json({
-      success: true,
-      message: "Leave form submitted successfully",
-      data: leaveForm,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Error creating leave form",
-      error: error.message,
-    });
-  }
-};
+  },
+];
 
 // Update leave form status (for admin/manager)
 exports.updateLeaveFormStatus = async (req, res) => {
@@ -275,6 +277,3 @@ exports.deleteLeaveForm = async (req, res) => {
     });
   }
 };
-
-
-

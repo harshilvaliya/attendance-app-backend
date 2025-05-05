@@ -8,7 +8,7 @@ const userRoutes = require("./routes/userRoutes");
 
 const app = express();
 
-// Middleware
+app.use("/public", express.static(path.join(__dirname, "public")));
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -16,7 +16,6 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use("/user", userRoutes);
 app.use("/admin", userRoutes);
-
 // Database connection
 const PORT = process.env.PORT || 3000;
 mongoose
