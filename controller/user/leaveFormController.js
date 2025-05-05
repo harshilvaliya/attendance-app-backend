@@ -5,21 +5,73 @@ const User = require("../../models/userModel");
 exports.createLeaveForm = async (req, res) => {
   try {
     const { leaveType, fromDate, toDate, reason, document } = req.body;
-    const userId = req.user._id; // Assuming user is authenticated and user ID is available in req.user
+    const userId = req.user._id;
+
+    // Validate required fields
+    if (!leaveType || !fromDate || !toDate || !reason) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Please provide all required fields: leaveType, fromDate, toDate, and reason",
+      });
+    }
+
+    // Validate leave type
+    const validLeaveTypes = [
+      "Annual",
+      "Sick",
+      "Maternity",
+      "Paternity",
+      "Unpaid",
+      "Other",
+    ];
+    if (!validLeaveTypes.includes(leaveType)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid leave type. Must be one of: Annual, Sick, Maternity, Paternity, Unpaid, Other",
+      });
+    }
 
     // Validate dates
-    if (new Date(fromDate) > new Date(toDate)) {
+    const fromDateObj = new Date(fromDate);
+    const toDateObj = new Date(toDate);
+    const currentDate = new Date();
+
+    if (isNaN(fromDateObj.getTime()) || isNaN(toDateObj.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid date format",
+      });
+    }
+
+    if (fromDateObj > toDateObj) {
       return res.status(400).json({
         success: false,
         message: "From date cannot be after to date",
       });
     }
 
+    if (fromDateObj < currentDate) {
+      return res.status(400).json({
+        success: false,
+        message: "Leave cannot be applied for past dates",
+      });
+    }
+
+    // Validate reason length
+    if (reason.length < 10 || reason.length > 500) {
+      return res.status(400).json({
+        success: false,
+        message: "Reason must be between 10 and 500 characters",
+      });
+    }
+
     const leaveForm = new LeaveForm({
       user: userId,
       leaveType,
-      fromDate,
-      toDate,
+      fromDate: fromDateObj,
+      toDate: toDateObj,
       reason,
       document,
     });
@@ -35,6 +87,46 @@ exports.createLeaveForm = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error creating leave form",
+      error: error.message,
+    });
+  }
+};
+
+// Update leave form status (for admin/manager)
+exports.updateLeaveFormStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    // Validate status
+    const validStatuses = ["Pending", "Approved", "Rejected"];
+    if (!status || !validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status. Must be one of: Pending, Approved, Rejected",
+      });
+    }
+
+    const leaveForm = await LeaveForm.findById(req.params.id);
+
+    if (!leaveForm) {
+      return res.status(404).json({
+        success: false,
+        message: "Leave form not found",
+      });
+    }
+
+    leaveForm.status = status;
+    await leaveForm.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Leave form status updated successfully",
+      data: leaveForm,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error updating leave form status",
       error: error.message,
     });
   }
@@ -93,6 +185,16 @@ exports.getLeaveFormById = async (req, res) => {
 exports.updateLeaveFormStatus = async (req, res) => {
   try {
     const { status } = req.body;
+
+    // Validate status
+    const validStatuses = ["Pending", "Approved", "Rejected"];
+    if (!status || !validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status. Must be one of: Pending, Approved, Rejected",
+      });
+    }
+
     const leaveForm = await LeaveForm.findById(req.params.id);
 
     if (!leaveForm) {
@@ -173,3 +275,14 @@ exports.deleteLeaveForm = async (req, res) => {
     });
   }
 };
+
+// for postman testing
+// {
+//   "user": "Harshil Valiya",
+//   "leaveType": "Annual",
+//   "fromDate": "2025-05-10T00:00:00.000Z",
+//   "toDate": "2025-05-15T00:00:00.000Z",
+//   "reason": "Family vacation",
+//   "document": "/uploads/documents/vacation-itinerary.pdf",
+//   "status": "Pending"
+// }
