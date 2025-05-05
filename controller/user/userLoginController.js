@@ -7,6 +7,31 @@ const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Validate required fields
+    if (!email || !password) {
+      return res.status(400).json({
+        status: "error",
+        message: "Email and password are required",
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid email format",
+      });
+    }
+
+    // Validate password length
+    if (password.length < 8) {
+      return res.status(400).json({
+        status: "error",
+        message: "Password must be at least 8 characters long",
+      });
+    }
+
     // Check if user exists
     const user = await User.findOne({ email });
     if (!user) {
@@ -25,6 +50,14 @@ const loginUser = async (req, res) => {
       });
     }
 
+    // Check if user is active
+    if (user.deletedAt) {
+      return res.status(401).json({
+        status: "error",
+        message: "Account is deactivated",
+      });
+    }
+
     // Update login timestamp
     user.LoginAt = new Date();
     await user.save();
@@ -34,25 +67,27 @@ const loginUser = async (req, res) => {
       {
         userId: user._id,
         email: user.email,
+        role: user.role,
       },
-      process.env.JWT_SECRET || "eminem", // In production, use environment variable
+      process.env.JWT_SECRET || "eminem",
       { expiresIn: "24h" }
     );
 
-    res.json({
-      status: 200,
+    res.status(200).json({
+      status: "success",
       message: "Login successful",
-      details: {
+      data: {
+        id: user._id,
         email: user.email,
+        username: user.username,
+        role: user.role,
         lastLogin: user.LoginAt,
         token: token,
       },
     });
   } catch (error) {
-    console.log(error);
-
-    res.json({
-      status: 500,
+    res.status(500).json({
+      status: "error",
       message: "Error during login",
       error: error.message,
     });
