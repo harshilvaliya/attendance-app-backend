@@ -14,13 +14,6 @@ const holidaySchema = new mongoose.Schema({
   endDate: {
     type: Date,
     default: null,
-    validate: {
-      validator: function (endDate) {
-        // If endDate is provided, it must be >= startDate
-        return !endDate || endDate >= this.startDate;
-      },
-      message: "End date must be on or after start date",
-    },
   },
   isDateRange: {
     type: Boolean,
