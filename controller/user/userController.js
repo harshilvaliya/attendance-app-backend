@@ -5,7 +5,6 @@ const addUser = async (req, res) => {
   try {
     const { username, phoneNumber, email, password, confirm_password } =
       req.body;
-
     // Validate required fields
     if (!username || !phoneNumber || !email || !password || !confirm_password) {
       return res.status(400).json({
