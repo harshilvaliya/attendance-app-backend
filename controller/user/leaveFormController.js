@@ -276,13 +276,5 @@ exports.deleteLeaveForm = async (req, res) => {
   }
 };
 
-// for postman testing
-// {
-//   "user": "Harshil Valiya",
-//   "leaveType": "Annual",
-//   "fromDate": "2025-05-10T00:00:00.000Z",
-//   "toDate": "2025-05-15T00:00:00.000Z",
-//   "reason": "Family vacation",
-//   "document": "/uploads/documents/vacation-itinerary.pdf",
-//   "status": "Pending"
-// }
+
+
