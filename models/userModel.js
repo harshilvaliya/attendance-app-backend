@@ -70,6 +70,14 @@ const userSchema = new mongoose.Schema({
     enum: ["user", "admin"],
     default: "user",
   },
+  department: {
+    type: String,
+    default: "Engineering",
+  },
+  position: {
+    type: String,
+    default: "Software Developer",
+  },
   selfieUrl: {
     type: String,
     default: null,

@@ -7,6 +7,7 @@ const {
   getAllUser,
   deleteUser,
   editUser,
+  getCurrentUser,
 } = require("../controller/user/userController");
 
 const { loginUser } = require("../controller/user/userLoginController");
@@ -36,9 +37,10 @@ router.post("/register", upload.single("selfie"), addUser);
 router.post("/login", loginUser);
 
 // Protected user routes
-router.get("/users", authMiddleware, getAllUser);
-router.delete("/user/:id", authMiddleware, deleteUser);
-router.put("/user/:id", authMiddleware, editUser);
+router.get("/get-users", authMiddleware, getAllUser);
+router.delete("/delete-user/:id", authMiddleware, deleteUser);
+router.put("/edit-user/:id", authMiddleware, editUser);
+router.get("/get-user", authMiddleware, getCurrentUser);
 
 // Leave Form Routes
 router.post("/leave-form", authMiddleware, createLeaveForm);

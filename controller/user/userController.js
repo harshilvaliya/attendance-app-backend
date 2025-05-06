@@ -405,8 +405,10 @@ const addUser = async (req, res) => {
         id: newUser._id,
         username: newUser.username,
         email: newUser.email,
-        role: newUser.role,
         phoneNumber: newUser.phoneNumber,
+        role: newUser.role,
+        department: newUser.department,
+        position: newUser.position,
         selfieUrl: newUser.selfieUrl,
       },
     });
@@ -602,9 +604,41 @@ const getAllUser = async (req, res) => {
   }
 };
 
+const getCurrentUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select(
+      "-password -confirm_password"
+    );
+    if (!user) {
+      return res.status(404).json({
+        status: "error",
+        message: "User not found",
+      });
+    }
+    res.json({
+      status: 200,
+      data: {
+        name: user.username,
+        email: user.email,
+        phone: user.phoneNumber,
+        department: user.department,
+        position: user.position,
+        joinDate: user.createdAt,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Error fetching user data",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   addUser,
   getAllUser,
   deleteUser,
   editUser,
+  getCurrentUser,
 };

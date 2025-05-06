@@ -1,14 +1,13 @@
 const { upload } = require("../../config/multer");
 const LeaveForm = require("../../models/leaveFormModel");
 
-exports.createLeaveForm = [
-  upload.single("document"), // 'document' should match the field name in your form
+const createLeaveForm = [
+  upload.single("document"),
   async (req, res) => {
     try {
       const { leaveType, fromDate, toDate, reason } = req.body;
       const userId = req.user._id;
 
-      // Validate required fields
       if (!leaveType || !fromDate || !toDate || !reason) {
         return res.status(400).json({
           success: false,
@@ -17,7 +16,6 @@ exports.createLeaveForm = [
         });
       }
 
-      // Validate leave type
       const validLeaveTypes = [
         "Annual",
         "Sick",
@@ -34,16 +32,14 @@ exports.createLeaveForm = [
         });
       }
 
-      // Validate dates
       const fromDateObj = new Date(fromDate);
       const toDateObj = new Date(toDate);
       const currentDate = new Date();
 
       if (isNaN(fromDateObj.getTime()) || isNaN(toDateObj.getTime())) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid date format",
-        });
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid date format" });
       }
 
       if (fromDateObj > toDateObj) {
@@ -60,7 +56,6 @@ exports.createLeaveForm = [
         });
       }
 
-      // Validate reason length
       if (reason.length < 10 || reason.length > 500) {
         return res.status(400).json({
           success: false,
@@ -74,7 +69,7 @@ exports.createLeaveForm = [
         fromDate: fromDateObj,
         toDate: toDateObj,
         reason,
-        document: req.file ? `/public/uploads/${req.file.filename}` : null, // Save the file path
+        document: req.file ? `/public/uploads/${req.file.filename}` : null,
       });
 
       await leaveForm.save();
@@ -94,13 +89,11 @@ exports.createLeaveForm = [
   },
 ];
 
-// Update leave form status (for admin/manager)
-exports.updateLeaveFormStatus = async (req, res) => {
+const updateLeaveFormStatus = async (req, res) => {
   try {
     const { status } = req.body;
-
-    // Validate status
     const validStatuses = ["Pending", "Approved", "Rejected"];
+
     if (!status || !validStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
@@ -109,12 +102,10 @@ exports.updateLeaveFormStatus = async (req, res) => {
     }
 
     const leaveForm = await LeaveForm.findById(req.params.id);
-
     if (!leaveForm) {
-      return res.status(404).json({
-        success: false,
-        message: "Leave form not found",
-      });
+      return res
+        .status(404)
+        .json({ success: false, message: "Leave form not found" });
     }
 
     leaveForm.status = status;
@@ -134,18 +125,13 @@ exports.updateLeaveFormStatus = async (req, res) => {
   }
 };
 
-// Get all leave forms for a user
-exports.getUserLeaveForms = async (req, res) => {
+const getUserLeaveForms = async (req, res) => {
   try {
     const userId = req.user._id;
     const leaveForms = await LeaveForm.find({ user: userId })
       .sort({ createdAt: -1 })
       .populate("user", "name email");
-
-    res.status(200).json({
-      success: true,
-      data: leaveForms,
-    });
+    res.status(200).json({ success: true, data: leaveForms });
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -155,25 +141,18 @@ exports.getUserLeaveForms = async (req, res) => {
   }
 };
 
-// Get a single leave form by ID
-exports.getLeaveFormById = async (req, res) => {
+const getLeaveFormById = async (req, res) => {
   try {
     const leaveForm = await LeaveForm.findById(req.params.id).populate(
       "user",
       "name email"
     );
-
     if (!leaveForm) {
-      return res.status(404).json({
-        success: false,
-        message: "Leave form not found",
-      });
+      return res
+        .status(404)
+        .json({ success: false, message: "Leave form not found" });
     }
-
-    res.status(200).json({
-      success: true,
-      data: leaveForm,
-    });
+    res.status(200).json({ success: true, data: leaveForm });
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -183,57 +162,12 @@ exports.getLeaveFormById = async (req, res) => {
   }
 };
 
-// Update leave form status (for admin/manager)
-exports.updateLeaveFormStatus = async (req, res) => {
-  try {
-    const { status } = req.body;
-
-    // Validate status
-    const validStatuses = ["Pending", "Approved", "Rejected"];
-    if (!status || !validStatuses.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid status. Must be one of: Pending, Approved, Rejected",
-      });
-    }
-
-    const leaveForm = await LeaveForm.findById(req.params.id);
-
-    if (!leaveForm) {
-      return res.status(404).json({
-        success: false,
-        message: "Leave form not found",
-      });
-    }
-
-    leaveForm.status = status;
-    await leaveForm.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Leave form status updated successfully",
-      data: leaveForm,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Error updating leave form status",
-      error: error.message,
-    });
-  }
-};
-
-// Get all leave forms (for admin/manager)
-exports.getAllLeaveForms = async (req, res) => {
+const getAllLeaveForms = async (req, res) => {
   try {
     const leaveForms = await LeaveForm.find()
       .sort({ createdAt: -1 })
       .populate("user", "name email");
-
-    res.status(200).json({
-      success: true,
-      data: leaveForms,
-    });
+    res.status(200).json({ success: true, data: leaveForms });
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -243,32 +177,24 @@ exports.getAllLeaveForms = async (req, res) => {
   }
 };
 
-// Delete a leave form
-exports.deleteLeaveForm = async (req, res) => {
+const deleteLeaveForm = async (req, res) => {
   try {
     const leaveForm = await LeaveForm.findById(req.params.id);
-
     if (!leaveForm) {
-      return res.status(404).json({
-        success: false,
-        message: "Leave form not found",
-      });
+      return res
+        .status(404)
+        .json({ success: false, message: "Leave form not found" });
     }
-
-    // Check if the user is authorized to delete this leave form
     if (leaveForm.user.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         message: "Not authorized to delete this leave form",
       });
     }
-
     await leaveForm.remove();
-
-    res.status(200).json({
-      success: true,
-      message: "Leave form deleted successfully",
-    });
+    res
+      .status(200)
+      .json({ success: true, message: "Leave form deleted successfully" });
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -276,4 +202,13 @@ exports.deleteLeaveForm = async (req, res) => {
       error: error.message,
     });
   }
+};
+
+module.exports = {
+  createLeaveForm,
+  updateLeaveFormStatus,
+  getUserLeaveForms,
+  getLeaveFormById,
+  getAllLeaveForms,
+  deleteLeaveForm,
 };
