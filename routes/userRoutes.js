@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { upload } = require("../config/multer");
 
 const {
   addUser,
@@ -30,7 +31,8 @@ const authMiddleware = require("../middleware/authMiddleware");
 const adminAuthMiddleware = require("../middleware/adminAuthMiddleware");
 
 // Public routes
-router.post("/register", addUser);
+// router.post("/register", addUser);
+router.post("/register", upload.single("selfie"), addUser);
 router.post("/login", loginUser);
 
 // Protected user routes

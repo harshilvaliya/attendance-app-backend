@@ -1,4 +1,4 @@
-const { upload } = require("../../config/multur");
+const { upload } = require("../../config/multer");
 const LeaveForm = require("../../models/leaveFormModel");
 
 exports.createLeaveForm = [
@@ -74,7 +74,7 @@ exports.createLeaveForm = [
         fromDate: fromDateObj,
         toDate: toDateObj,
         reason,
-        document: req.file ? `/public/${req.file.filename}` : null, // Save the file path
+        document: req.file ? `/public/uploads/${req.file.filename}` : null, // Save the file path
       });
 
       await leaveForm.save();
