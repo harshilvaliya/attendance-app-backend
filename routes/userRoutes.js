@@ -33,7 +33,7 @@ router.post("/login", loginUser);
 // Protected user routes
 router
   .get("/get-users", authMiddleware, getAllUser)
-  .delete("/delete-user/:id", authMiddleware, deleteUser)
+  .delete("/delete-user/:id", adminAuthMiddleware, deleteUser)
   .put("/edit-user/:id", authMiddleware, editUser)
   .get("/get-user", authMiddleware, getCurrentUser);
 
