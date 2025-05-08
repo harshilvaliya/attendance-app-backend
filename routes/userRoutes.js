@@ -49,7 +49,7 @@ router
 // Holiday Routes (Admin Only)
 router
   .post("/holiday", adminAuthMiddleware, addHoliday)
-  .get("/holidays", adminAuthMiddleware, getAllHolidays)
+  .get("/holidays", authMiddleware, getAllHolidays)
   .delete("/holiday/:id", adminAuthMiddleware, deleteHoliday)
   .put("/holiday/:id", adminAuthMiddleware, editHoliday);
 
