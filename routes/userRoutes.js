@@ -40,7 +40,7 @@ router
 // Leave Form Routes
 router
   .post("/leave-form", authMiddleware, createLeaveForm)
-  .get("/leave-forms", adminAuthMiddleware, getUserLeaveForms)
+  .get("/leave-forms", authMiddleware, getUserLeaveForms)
   .get("/leave-form/:id", adminAuthMiddleware, getLeaveFormById)
   .put("/leave-form/:id/status", adminAuthMiddleware, updateLeaveFormStatus)
   .get("/all-leave-forms", adminAuthMiddleware, getAllLeaveForms)
