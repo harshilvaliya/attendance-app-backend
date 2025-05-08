@@ -125,22 +125,6 @@ const updateLeaveFormStatus = async (req, res) => {
   }
 };
 
-const getUserLeaveForms = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const leaveForms = await LeaveForm.find({ user: userId })
-      .sort({ createdAt: -1 })
-      .populate("user", "name email");
-    res.status(200).json({ success: true, data: leaveForms });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Error fetching leave forms",
-      error: error.message,
-    });
-  }
-};
-
 const getLeaveFormById = async (req, res) => {
   try {
     const leaveForm = await LeaveForm.findById(req.params.id).populate(
@@ -162,12 +146,110 @@ const getLeaveFormById = async (req, res) => {
   }
 };
 
+const getUserLeaveForms = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const {
+      search,
+      sortBy = "createdAt",
+      order = "desc",
+      status,
+      leaveType,
+    } = req.query;
+
+    const query = { user: userId };
+
+    // Filter by status if provided
+    if (status) {
+      query.status = status;
+    }
+
+    // Filter by leave type if provided
+    if (leaveType) {
+      query.leaveType = leaveType;
+    }
+
+    // Search in reason field if search parameter is provided
+    if (search) {
+      query.reason = new RegExp(search, "i");
+    }
+
+    // Count total leave forms matching the query
+    const totalLeaveForms = await LeaveForm.countDocuments(query);
+
+    // Get leave forms with sorting
+    const leaveForms = await LeaveForm.find(query)
+      .sort({ [sortBy]: order === "desc" ? 1 : -1 })
+      .populate("user", "name email");
+
+    res.status(200).json({
+      success: true,
+      data: leaveForms,
+      totalLeaveForms,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error fetching leave forms",
+      error: error.message,
+    });
+  }
+};
+
 const getAllLeaveForms = async (req, res) => {
   try {
-    const leaveForms = await LeaveForm.find()
-      .sort({ createdAt: -1 })
+    const {
+      search,
+      sortBy = "createdAt",
+      order = "desc",
+      status,
+      leaveType,
+      fromDate,
+      toDate,
+    } = req.query;
+
+    const query = {};
+
+    // Filter by status if provided
+    if (status) {
+      query.status = status;
+    }
+
+    // Filter by leave type if provided
+    if (leaveType) {
+      query.leaveType = leaveType;
+    }
+
+    // Filter by date range if provided
+    if (fromDate || toDate) {
+      query.fromDate = {};
+      if (fromDate) {
+        query.fromDate.$gte = new Date(fromDate);
+      }
+      if (toDate) {
+        query.toDate = {};
+        query.toDate.$lte = new Date(toDate);
+      }
+    }
+
+    // Search in reason field if search parameter is provided
+    if (search) {
+      query.reason = new RegExp(search, "i");
+    }
+
+    // Count total leave forms matching the query
+    const totalLeaveForms = await LeaveForm.countDocuments(query);
+
+    // Get leave forms with sorting
+    const leaveForms = await LeaveForm.find(query)
+      .sort({ [sortBy]: order === "desc" ? 1 : -1 })
       .populate("user", "name email");
-    res.status(200).json({ success: true, data: leaveForms });
+
+    res.status(200).json({
+      success: true,
+      data: leaveForms,
+      totalLeaveForms,
+    });
   } catch (error) {
     res.status(500).json({
       success: false,

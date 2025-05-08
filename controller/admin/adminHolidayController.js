@@ -101,14 +101,35 @@ const addHoliday = async (req, res) => {
   }
 };
 
-// Get all holidays
+// Get all holidays with sorting and filtering
 const getAllHolidays = async (req, res) => {
   try {
-    const holidays = await Holiday.find().sort({ startDate: 1 });
+    const { search, sortBy = "startDate", order = "asc", type } = req.query;
+
+    const query = {};
+
+    // Filter by type if provided
+    if (type) {
+      query.type = type;
+    }
+
+    // Search by name if search parameter is provided
+    if (search) {
+      query.name = new RegExp(search, "i");
+    }
+
+    // Count total holidays matching the query
+    const totalHolidays = await Holiday.countDocuments(query);
+
+    // Get holidays with sorting
+    const holidays = await Holiday.find(query).sort({
+      [sortBy]: order === "asc" ? 1 : -1,
+    });
 
     res.status(200).json({
       status: "success",
       data: holidays,
+      totalHolidays,
     });
   } catch (error) {
     res.status(500).json({
@@ -229,22 +250,6 @@ const editHoliday = async (req, res) => {
       let endDateObj = endDate
         ? new Date(endDate + "T00:00:00Z") // Explicitly set to UTC
         : existingHoliday.endDate;
-
-      // Validate date formats
-      // if (startDate && isNaN(startDateObj.getTime())) {
-      //   return res.status(400).json({
-      //     status: "error",
-      //     message: "Invalid start date format. Use YYYY-MM-DD format",
-      //   });
-      // }
-
-      // if (endDate && isNaN(endDateObj.getTime())) {
-      //   return res.status(400).json({
-      //     status: "error",
-      //     message: "Invalid end date format. Use YYYY-MM-DD format",
-      //   });
-      // }
-
       // Set time to start of day for proper comparison
       startDateObj.setUTCHours(0, 0, 0, 0);
       if (endDateObj) endDateObj.setUTCHours(0, 0, 0, 0);

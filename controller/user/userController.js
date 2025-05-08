@@ -254,7 +254,7 @@ const deleteUser = async (req, res) => {
 
 const getAllUser = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search } = req.query;
+    const { page = 1, limit = 10, search, sortBy = "createdAt", order = "desc", role, department } = req.query;
 
     // Validate pagination parameters
     const pageNumber = parseInt(page);
@@ -275,6 +275,18 @@ const getAllUser = async (req, res) => {
     }
 
     const query = {};
+    
+    // Filter by role if provided
+    if (role) {
+      query.role = role;
+    }
+    
+    // Filter by department if provided
+    if (department) {
+      query.department = department;
+    }
+    
+    // Search functionality
     if (search) {
       query.$or = [
         { username: { $regex: search, $options: "i" } },
@@ -286,6 +298,7 @@ const getAllUser = async (req, res) => {
     const total = await User.countDocuments(query);
     const users = await User.find(query)
       .select("-password -confirm_password")
+      .sort({ [sortBy]: order === "asc" ? 1 : -1 })
       .skip((pageNumber - 1) * limitNumber)
       .limit(limitNumber);
 
