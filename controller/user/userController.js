@@ -12,13 +12,47 @@ const addUser = async (req, res) => {
       });
     }
 
-    const { username, phoneNumber, email, password, confirm_password } =
-      req.body;
+    const {
+      username,
+      firstName,
+      lastName,
+      phoneNumber,
+      email,
+      password,
+      confirm_password,
+    } = req.body;
     // Validate required fields
-    if (!username || !phoneNumber || !email || !password || !confirm_password) {
+    if (
+      !username ||
+      !firstName ||
+      !lastName ||
+      !phoneNumber ||
+      !email ||
+      !password ||
+      !confirm_password
+    ) {
       return res.status(400).json({
         status: "error",
         message: "All fields are required",
+      });
+    }
+
+    // Validate firstName and lastName (only letters and spaces allowed)
+    const nameRegex = /^[A-Za-z]+$/;
+    if (!nameRegex.test(firstName) || !nameRegex.test(lastName)) {
+      return res.status(400).json({
+        status: "error",
+        message: "First name and last name can only contain letters",
+      });
+    }
+
+    // Validate username format
+    const usernameRegex = /^[a-zA-Z0-9@#_-]+$/;
+    if (!usernameRegex.test(username)) {
+      return res.status(400).json({
+        status: "error",
+        message:
+          "Username can only contain letters, numbers, and special characters (@, #, _, -)",
       });
     }
 
@@ -89,13 +123,14 @@ const addUser = async (req, res) => {
       "host"
     )}/public/uploads/${selfieFilename}`;
 
-    // Create new user
+    // Create new user - confirm_password is not included
     const newUser = new User({
       username,
+      firstName,
+      lastName,
       phoneNumber,
       email,
       password: hashedPassword,
-      confirm_password: hashedPassword,
       selfieUrl,
     });
 
@@ -107,6 +142,8 @@ const addUser = async (req, res) => {
       data: {
         id: newUser._id,
         username: newUser.username,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
         email: newUser.email,
         phoneNumber: newUser.phoneNumber,
         role: newUser.role,
@@ -127,14 +164,30 @@ const addUser = async (req, res) => {
 const editUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { email, username, phoneNumber } = req.body;
+    const { email, username, firstName, lastName, phoneNumber } = req.body;
 
     // Validate if at least one field is provided
-    if (!email && !username && !phoneNumber) {
+    if (!email && !username && !firstName && !lastName && !phoneNumber) {
       return res.status(400).json({
         status: "error",
         message:
-          "At least one field (email, username, or phoneNumber) is required",
+          "At least one field (email, username, firstName, lastName, or phoneNumber) is required",
+      });
+    }
+
+    // Validate firstName and lastName if provided
+    const nameRegex = /^[A-Za-z\s]+$/;
+    if (firstName && !nameRegex.test(firstName)) {
+      return res.status(400).json({
+        status: "error",
+        message: "First name can only contain letters and spaces",
+      });
+    }
+
+    if (lastName && !nameRegex.test(lastName)) {
+      return res.status(400).json({
+        status: "error",
+        message: "Last name can only contain letters and spaces",
       });
     }
 
@@ -186,6 +239,8 @@ const editUser = async (req, res) => {
     const updateData = {};
     if (email) updateData.email = email;
     if (username) updateData.username = username;
+    if (firstName) updateData.firstName = firstName;
+    if (lastName) updateData.lastName = lastName;
     if (phoneNumber) updateData.phoneNumber = phoneNumber;
 
     const updatedUser = await User.findByIdAndUpdate(id, updateData, {
@@ -205,6 +260,8 @@ const editUser = async (req, res) => {
       data: {
         id: updatedUser._id,
         username: updatedUser.username,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
         email: updatedUser.email,
         phoneNumber: updatedUser.phoneNumber,
       },
@@ -254,7 +311,15 @@ const deleteUser = async (req, res) => {
 
 const getAllUser = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search, sortBy = "createdAt", order = "desc", role, department } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      sortBy = "createdAt",
+      order = "desc",
+      role,
+      department,
+    } = req.query;
 
     // Validate pagination parameters
     const pageNumber = parseInt(page);
@@ -275,17 +340,17 @@ const getAllUser = async (req, res) => {
     }
 
     const query = {};
-    
+
     // Filter by role if provided
     if (role) {
       query.role = role;
     }
-    
+
     // Filter by department if provided
     if (department) {
       query.department = department;
     }
-    
+
     // Search functionality
     if (search) {
       query.$or = [
@@ -335,6 +400,8 @@ const getCurrentUser = async (req, res) => {
       status: 200,
       data: {
         name: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
         phone: user.phoneNumber,
         department: user.department,

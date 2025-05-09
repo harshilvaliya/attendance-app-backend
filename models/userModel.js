@@ -4,6 +4,14 @@ const userSchema = new mongoose.Schema({
   username: {
     type: String,
   },
+  firstName: {
+    type: String,
+    required: [true, "First name is required"],
+  },
+  lastName: {
+    type: String,
+    required: [true, "Last name is required"],
+  },
   phoneNumber: {
     type: String,
     unique: true,
@@ -18,10 +26,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, "Password is required"],
   },
-  confirm_password: {
-    type: String,
-    required: [true, "Password is required"],
-  },
+  // confirm_password field removed from schema
   role: {
     type: String,
     enum: ["user", "admin"],
