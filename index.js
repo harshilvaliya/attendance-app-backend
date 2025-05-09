@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app
-  .use("/public/uploads", express.static(path.join(__dirname, "public")))
+  .use("/public", express.static(path.join(__dirname, "public")))
   .use(cors())
   .use(express.json())
   .use(express.urlencoded({ extended: true }));

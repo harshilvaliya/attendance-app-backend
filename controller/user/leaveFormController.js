@@ -70,7 +70,7 @@ const createLeaveForm = async (req, res) => {
       toDate: toDateObj,
       reason,
       // Update the document path to match the new format from uploadMiddleware
-      document: req.file ? `/leaveUploads/${req.file.filename}` : null,
+      document: req.file ? `public/leaveUploads/${req.file.filename}` : null,
     });
 
     await leaveForm.save();
@@ -243,7 +243,7 @@ const getAllLeaveForms = async (req, res) => {
     // Get leave forms with sorting
     const leaveForms = await LeaveForm.find(query)
       .sort({ [sortBy]: order === "desc" ? 1 : -1 })
-      .populate("user", "name email");
+      .populate("user", "username");
 
     res.status(200).json({
       success: true,

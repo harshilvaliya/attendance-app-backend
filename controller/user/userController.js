@@ -16,7 +16,7 @@ const addUser = async (req, res) => {
           message: err.message,
         });
       }
-      
+
       const {
         username,
         firstName,
