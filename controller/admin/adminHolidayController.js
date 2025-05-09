@@ -121,10 +121,10 @@ const getAllHolidays = async (req, res) => {
     // Count total holidays matching the query
     const totalHolidays = await Holiday.countDocuments(query);
 
-    // Get holidays with sorting
-    const holidays = await Holiday.find(query).sort({
-      [sortBy]: order === "asc" ? 1 : -1,
-    });
+    // Always sort by sortBy and order, defaulting to startDate ascending
+    const sortField = sortBy || "startDate";
+    const sortOrder = order === "asc" ? -1 : 1;
+    const holidays = await Holiday.find(query).sort({ [sortField]: sortOrder });
 
     res.status(200).json({
       status: "success",
