@@ -1,93 +1,93 @@
-const { upload } = require("../../config/multer");
+// Replace multer import with the uploadMiddleware import
 const LeaveForm = require("../../models/leaveFormModel");
 
-const createLeaveForm = [
-  upload.single("document"),
-  async (req, res) => {
-    try {
-      const { leaveType, fromDate, toDate, reason } = req.body;
-      const userId = req.user._id;
+// Remove the upload.single("document") middleware from the array
+// and convert to a regular async function
+const createLeaveForm = async (req, res) => {
+  try {
+    const { leaveType, fromDate, toDate, reason } = req.body;
+    const userId = req.user._id;
 
-      if (!leaveType || !fromDate || !toDate || !reason) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Please provide all required fields: leaveType, fromDate, toDate, and reason",
-        });
-      }
-
-      const validLeaveTypes = [
-        "Annual",
-        "Sick",
-        "Maternity",
-        "Paternity",
-        "Unpaid",
-        "Other",
-      ];
-      if (!validLeaveTypes.includes(leaveType)) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Invalid leave type. Must be one of: Annual, Sick, Maternity, Paternity, Unpaid, Other",
-        });
-      }
-
-      const fromDateObj = new Date(fromDate);
-      const toDateObj = new Date(toDate);
-      const currentDate = new Date();
-
-      if (isNaN(fromDateObj.getTime()) || isNaN(toDateObj.getTime())) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Invalid date format" });
-      }
-
-      if (fromDateObj > toDateObj) {
-        return res.status(400).json({
-          success: false,
-          message: "From date cannot be after to date",
-        });
-      }
-
-      if (fromDateObj < currentDate) {
-        return res.status(400).json({
-          success: false,
-          message: "Leave cannot be applied for past dates",
-        });
-      }
-
-      if (reason.length < 10 || reason.length > 500) {
-        return res.status(400).json({
-          success: false,
-          message: "Reason must be between 10 and 500 characters",
-        });
-      }
-
-      const leaveForm = new LeaveForm({
-        user: userId,
-        leaveType,
-        fromDate: fromDateObj,
-        toDate: toDateObj,
-        reason,
-        document: req.file ? `/public/uploads/${req.file.filename}` : null,
-      });
-
-      await leaveForm.save();
-
-      res.status(201).json({
-        success: true,
-        message: "Leave form submitted successfully",
-        data: leaveForm,
-      });
-    } catch (error) {
-      res.status(500).json({
+    if (!leaveType || !fromDate || !toDate || !reason) {
+      return res.status(400).json({
         success: false,
-        message: "Error creating leave form",
-        error: error.message,
+        message:
+          "Please provide all required fields: leaveType, fromDate, toDate, and reason",
       });
     }
-  },
-];
+
+    const validLeaveTypes = [
+      "Annual",
+      "Sick",
+      "Maternity",
+      "Paternity",
+      "Unpaid",
+      "Other",
+    ];
+    if (!validLeaveTypes.includes(leaveType)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid leave type. Must be one of: Annual, Sick, Maternity, Paternity, Unpaid, Other",
+      });
+    }
+
+    const fromDateObj = new Date(fromDate);
+    const toDateObj = new Date(toDate);
+    const currentDate = new Date();
+
+    if (isNaN(fromDateObj.getTime()) || isNaN(toDateObj.getTime())) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid date format" });
+    }
+
+    if (fromDateObj > toDateObj) {
+      return res.status(400).json({
+        success: false,
+        message: "From date cannot be after to date",
+      });
+    }
+
+    if (fromDateObj < currentDate) {
+      return res.status(400).json({
+        success: false,
+        message: "Leave cannot be applied for past dates",
+      });
+    }
+
+    if (reason.length < 10 || reason.length > 500) {
+      return res.status(400).json({
+        success: false,
+        message: "Reason must be between 10 and 500 characters",
+      });
+    }
+
+    const leaveForm = new LeaveForm({
+      user: userId,
+      leaveType,
+      fromDate: fromDateObj,
+      toDate: toDateObj,
+      reason,
+      // Update the document path to match the new format from uploadMiddleware
+      document: req.file ? `/leaveUploads/${req.file.filename}` : null,
+    });
+
+    await leaveForm.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Leave form submitted successfully",
+      data: leaveForm,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error creating leave form",
+      error: error.message,
+    });
+  }
+};
 
 const updateLeaveFormStatus = async (req, res) => {
   try {

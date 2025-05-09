@@ -1,158 +1,163 @@
 const User = require("../../models/userModel");
 const bcrypt = require("bcryptjs");
 const path = require("path");
+// Replace multer import with the new middleware
+const { uploadUserImage } = require("../../config/uploadMiddleware");
+
+// Remove any direct multer configuration here
 
 const addUser = async (req, res) => {
   try {
-    // Multer puts the file metadata on req.file
-    if (!req.file) {
-      return res.status(400).json({
-        status: "error",
-        message: "Selfie image is required",
+    // Handle file upload first
+    uploadUserImage(req, res, async (err) => {
+      if (err) {
+        return res.status(400).json({
+          status: "error",
+          message: err.message,
+        });
+      }
+      
+      const {
+        username,
+        firstName,
+        lastName,
+        phoneNumber,
+        email,
+        password,
+        confirm_password,
+      } = req.body;
+
+      // Validate required fields
+      if (
+        !username ||
+        !firstName ||
+        !lastName ||
+        !phoneNumber ||
+        !email ||
+        !password ||
+        !confirm_password
+      ) {
+        return res.status(400).json({
+          status: "error",
+          message: "All fields are required",
+        });
+      }
+
+      // Validate firstName and lastName (only letters and spaces allowed)
+      const nameRegex = /^[A-Za-z]+$/;
+      if (!nameRegex.test(firstName) || !nameRegex.test(lastName)) {
+        return res.status(400).json({
+          status: "error",
+          message: "First name and last name can only contain letters",
+        });
+      }
+
+      // Validate username format
+      const usernameRegex = /^[a-zA-Z0-9@#_-]+$/;
+      if (!usernameRegex.test(username)) {
+        return res.status(400).json({
+          status: "error",
+          message:
+            "Username can only contain letters, numbers, and special characters (@, #, _, -)",
+        });
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({
+          status: "error",
+          message: "Invalid email format",
+        });
+      }
+
+      // Validate phone number (10 digits)
+      const phoneRegex = /^[0-9]{10}$/;
+      if (!phoneRegex.test(phoneNumber)) {
+        return res.status(400).json({
+          status: "error",
+          message: "Phone number must be 10 digits",
+        });
+      }
+
+      // Validate username length
+      if (username.length < 3 || username.length > 30) {
+        return res.status(400).json({
+          status: "error",
+          message: "Username must be between 3 and 30 characters",
+        });
+      }
+
+      // Validate password strength
+      const passwordRegex =
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      if (!passwordRegex.test(password)) {
+        return res.status(400).json({
+          status: "error",
+          message:
+            "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character",
+        });
+      }
+
+      // Validate password confirmation
+      if (password !== confirm_password) {
+        return res.status(400).json({
+          status: "error",
+          message: "Passwords do not match",
+        });
+      }
+
+      // Check if user already exists
+      const existingUser = await User.findOne({
+        $or: [{ email }, { phoneNumber }],
       });
-    }
 
-    const {
-      username,
-      firstName,
-      lastName,
-      phoneNumber,
-      email,
-      password,
-      confirm_password,
-    } = req.body;
-    // Validate required fields
-    if (
-      !username ||
-      !firstName ||
-      !lastName ||
-      !phoneNumber ||
-      !email ||
-      !password ||
-      !confirm_password
-    ) {
-      return res.status(400).json({
-        status: "error",
-        message: "All fields are required",
+      if (existingUser) {
+        return res.status(409).json({
+          status: "error",
+          message: "User with this email or phone number already exists",
+        });
+      }
+
+      // Hash the password
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+
+      // Get the uploaded file path
+      const selfieUrl = req.file ? req.file.path : null;
+
+      // Create new user
+      const newUser = new User({
+        username,
+        firstName,
+        lastName,
+        phoneNumber,
+        email,
+        password: hashedPassword,
+        selfieUrl,
       });
-    }
 
-    // Validate firstName and lastName (only letters and spaces allowed)
-    const nameRegex = /^[A-Za-z]+$/;
-    if (!nameRegex.test(firstName) || !nameRegex.test(lastName)) {
-      return res.status(400).json({
-        status: "error",
-        message: "First name and last name can only contain letters",
+      await newUser.save();
+
+      res.status(201).json({
+        status: 201,
+        message: "User registered successfully",
+        data: {
+          id: newUser._id,
+          username: newUser.username,
+          firstName: newUser.firstName,
+          lastName: newUser.lastName,
+          email: newUser.email,
+          phoneNumber: newUser.phoneNumber,
+          role: newUser.role,
+          department: newUser.department,
+          position: newUser.position,
+          selfieUrl: newUser.selfieUrl,
+        },
       });
-    }
-
-    // Validate username format
-    const usernameRegex = /^[a-zA-Z0-9@#_-]+$/;
-    if (!usernameRegex.test(username)) {
-      return res.status(400).json({
-        status: "error",
-        message:
-          "Username can only contain letters, numbers, and special characters (@, #, _, -)",
-      });
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({
-        status: "error",
-        message: "Invalid email format",
-      });
-    }
-
-    // Validate phone number (10 digits)
-    const phoneRegex = /^[0-9]{10}$/;
-    if (!phoneRegex.test(phoneNumber)) {
-      return res.status(400).json({
-        status: "error",
-        message: "Phone number must be 10 digits",
-      });
-    }
-
-    // Validate username length
-    if (username.length < 3 || username.length > 30) {
-      return res.status(400).json({
-        status: "error",
-        message: "Username must be between 3 and 30 characters",
-      });
-    }
-
-    // Validate password strength
-    const passwordRegex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    if (!passwordRegex.test(password)) {
-      return res.status(400).json({
-        status: "error",
-        message:
-          "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character",
-      });
-    }
-
-    // Validate password confirmation
-    if (password !== confirm_password) {
-      return res.status(400).json({
-        status: "error",
-        message: "Passwords do not match",
-      });
-    }
-
-    // Check if user already exists
-    const existingUser = await User.findOne({
-      $or: [{ email }, { phoneNumber }],
-    });
-
-    if (existingUser) {
-      return res.status(409).json({
-        status: "error",
-        message: "User with this email or phone number already exists",
-      });
-    }
-
-    // Hash the password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Build selfie URL
-    const selfieFilename = req.file.filename; // e.g. "1615565583571-selfie.png"
-    const selfieUrl = `${req.protocol}://${req.get(
-      "host"
-    )}/public/uploads/${selfieFilename}`;
-
-    // Create new user - confirm_password is not included
-    const newUser = new User({
-      username,
-      firstName,
-      lastName,
-      phoneNumber,
-      email,
-      password: hashedPassword,
-      selfieUrl,
-    });
-
-    await newUser.save();
-
-    res.status(201).json({
-      status: 201,
-      message: "User registered successfully",
-      data: {
-        id: newUser._id,
-        username: newUser.username,
-        firstName: newUser.firstName,
-        lastName: newUser.lastName,
-        email: newUser.email,
-        phoneNumber: newUser.phoneNumber,
-        role: newUser.role,
-        department: newUser.department,
-        position: newUser.position,
-        selfieUrl: newUser.selfieUrl,
-      },
     });
   } catch (error) {
+    console.log(error);
     res.status(500).json({
       status: "error",
       message: "Error registering user",
@@ -404,6 +409,7 @@ const getCurrentUser = async (req, res) => {
         lastName: user.lastName,
         email: user.email,
         phone: user.phoneNumber,
+        selfieUrl: user.selfieUrl,
         department: user.department,
         position: user.position,
         joinDate: user.createdAt,
